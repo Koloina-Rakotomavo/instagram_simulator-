@@ -1,0 +1,13 @@
+# Cloudflare Worker : passerelle Apify (la page HTML reste sur GitHub Pages)
+name = "instagram-simulator-import"
+main = "worker.js"
+compatibility_date = "2026-10-16"
+workers_dev = true
+
+[vars]
+# En-tête Origin du site GitHub Pages : sans le chemin /instagram_simulator-/
+SITE_ORIGIN = "https://koloina-rakotomavo.github.io"
+
+# Ne JAMAIS placer APIFY_TOKEN ni IMPORT_PASSCODE ici.
+# Dans Cloudflare > Workers & Pages > ton Worker > Settings > Variables and Secrets :
+# ajoute APIFY_TOKEN et IMPORT_PASSCODE avec le type Secret.
