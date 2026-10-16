@@ -1,0 +1,10 @@
+# Données sensibles / environnement local
+.env
+.env.*
+.dev.vars
+.dev.vars.*
+.wrangler/
+node_modules/
+__pycache__/
+*.pyc
+.DS_Store
