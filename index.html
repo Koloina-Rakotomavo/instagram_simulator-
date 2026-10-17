@@ -223,6 +223,21 @@ input:focus,textarea:focus,select:focus{border-color:#a8a8a8}
   button,.file-label{transition:none}
 }
 
+
+/* Réparer une miniature directement dans sa case (sur iPhone également). */
+.replace-photo-label{
+ position:absolute;left:50%;bottom:10%;transform:translateX(-50%);
+ z-index:3;display:inline-flex;align-items:center;justify-content:center;
+ white-space:nowrap;padding:6px 7px;max-width:95%;min-height:30px;
+ border:1px solid #dadada;border-radius:7px;background:#fff;
+ color:#262626;font-size:10px;font-weight:650;cursor:pointer;
+}
+.replace-photo-label input[type=file]{
+ position:absolute;inset:0;width:100%;height:100%;
+ opacity:0;cursor:pointer;
+}
+@media(max-width:375px){.replace-photo-label{font-size:9px;padding:5px;min-height:28px}}
+
 </style>
 </head><body>
 <header class="sitebar">
@@ -249,6 +264,8 @@ input:focus,textarea:focus,select:focus{border-color:#a8a8a8}
  <div class="edit-panel">
   <div class="mobile-only" style="display:none"><div class="section-head" style="margin:0 0 8px">Modifier ma composition</div><label class="file-label primary">＋ Ajouter mes visuels<input id="imagesMobile" type="file" accept="image/*" multiple></label><p class="hint" style="margin:8px 0">Sélectionne une publication, puis touche sa nouvelle place, ou utilise les flèches sous chaque image.</p></div>
   <div class="action-grid"><button id="undo" disabled>↶ Annuler</button><button id="export">Enregistrer le projet</button><button id="shareProject">Partager / Fichiers</button><label class="file-label">Ouvrir un projet<input id="project" type="file" accept=".json,application/json"></label><button id="reset">Réinitialiser</button><label class="file-label">Importer JSON Instagram<input id="instagramJson" type="file" accept=".json,application/json"></label></div>
+  <label class="file-label" style="margin-top:10px;width:100%">Compléter les photos du JSON<input id="repairImages" type="file" accept="image/*" multiple></label>
+  <p class="hint" style="margin:6px 0 0">Après l’import JSON, sélectionne tes photos dans l’ordre de la grille. Le profil et les publications restent inchangés.</p>
   <details class="fold"><summary>Personnaliser le profil</summary><div class="fold-content">
    <label class="field" for="username">Nom d’utilisateur</label><input type="text" id="username" maxlength="50" value="ton.compte">
    <label class="field" for="displayName">Nom affiché</label><input type="text" id="displayName" maxlength="100" placeholder="Ton nom ou ton activité">
@@ -306,9 +323,25 @@ function render(){document.documentElement.style.setProperty('--feed-ratio',$('r
    wrap.style.background='#f2f2f2';
    const msg=document.createElement('span');
    msg.className='hint';
-   msg.textContent='Lien photo expiré ou bloqué';
-   msg.style.cssText='display:grid;place-items:center;height:100%;text-align:center;padding:7px;color:#777;font-size:11px';
-   wrap.prepend(msg);
+   msg.textContent='Photo inaccessible';
+   msg.style.cssText='position:absolute;inset:5% 5% 36%;display:grid;place-items:center;text-align:center;padding:5px;color:#777;font-size:11px';
+   const label=document.createElement('label');
+   label.className='replace-photo-label';
+   label.textContent='Ajouter photo';
+   label.setAttribute('aria-label','Remplacer la photo de la publication '+(i+1));
+   const picker=document.createElement('input');
+   picker.type='file';
+   picker.accept='image/*';
+   picker.onclick=e=>e.stopPropagation();
+   picker.onchange=async()=>{
+     const file=picker.files?.[0];
+     if(!file)return;
+     try{const data=await readImage(file);checkpoint();posts[i]={...posts[i],src:data,sources:[data]};selected=-1;render();show('Photo '+(i+1)+' ajoutée. Enregistre ton projet pour la conserver.')}
+     catch(e){show(e.message||'Image incompatible.',true)}
+   };
+   label.onclick=e=>e.stopPropagation();
+   label.append(picker);
+   wrap.prepend(msg,label);
   };
   img.src=alternatives[0];
   wrap.append(img)
@@ -333,7 +366,28 @@ function moveStory(a,b){if(b<0||b>=stories.length)return;stories.splice(b,0,stor
 function renderStoryEditors(){const root=$('storyEditors');root.replaceChildren();stories.forEach((story,i)=>{const box=document.createElement('div');box.className='story-editor';const label=document.createElement('label');label.className='field';label.htmlFor='story-title-'+i;label.textContent='Story '+(i+1);const input=document.createElement('input');input.type='text';input.id=label.htmlFor;input.maxLength=40;input.value=story.title;input.oninput=()=>{story.title=input.value;renderStories()};const controls=document.createElement('div');controls.className='story-controls';const upload=document.createElement('label');upload.className='file-label';upload.textContent='Couverture';const file=document.createElement('input');file.type='file';file.accept='image/*';file.onchange=async()=>{try{if(file.files[0]){story.cover=await readImage(file.files[0]);renderStories()}}catch(e){show(e.message,true)}file.value=''};upload.append(file);controls.append(upload);for(let [txt,title,fn] of [['←','Avant',()=>moveStory(i,i-1)],['→','Après',()=>moveStory(i,i+1)],['×','Supprimer',()=>{stories.splice(i,1);renderStoryEditors();renderStories()}]]){const b=document.createElement('button');b.textContent=txt;b.title=title;b.setAttribute('aria-label',title+' story '+(i+1));b.onclick=fn;controls.append(b)}box.append(label,input,controls);root.append(box)})}
 $('addStory').onclick=()=>{if(stories.length>=30){show('30 stories à la une maximum.',true);return}stories.push({title:'Nouvelle story',cover:'',symbol:'✦'});renderStoryEditors();renderStories();const el=$('story-title-'+(stories.length-1));el.focus();el.select()};
 $('undo').onclick=()=>{const state=undoStack.pop();if(!state)return;posts=state.posts;examples=state.examples;selected=state.selected;render();$('undo').disabled=!undoStack.length;show('Dernière modification annulée.')};
-$('reset').onclick=()=>{if(confirm('Effacer cette composition et revenir aux exemples ? Pense à enregistrer ton projet.')){avatar='';stories=defaultStories();$('username').value='ton.compte';$('displayName').value='';$('followers').value=1248;$('following').value=386;$('bio').value='Ton nom · ton univers\nUne phrase pour présenter ton activité.\n↓ Découvrir mes projets';renderStoryEditors();demo();show('Exemples restaurés.')}};
+$('reset').onclick=()=>{if(confirm('Effacer cette composition et revenir aux exemples ? Pense à enregistrer ton projet.')){avatar='';stories=defaultStories();$('username').value='ton.compte';$('displayName').value='';$('followers').value=1248;$('following').value=386;$('bio').value='Ton nom · ton univers\nUne phrase pour présenter ton activité.\n↓ Découvrir mes projets';
+$('repairImages').onchange=async e=>{
+ const files=Array.from(e.target.files||[]);
+ e.target.value='';
+ if(!files.length)return;
+ if(examples||!posts.length){show('Importe d’abord le JSON du profil, puis ajoute les photos.',true);return}
+ const count=Math.min(files.length,posts.length);
+ show('Préparation des photos : 0/'+count+'…',false,true);
+ const ready=[];
+ for(let i=0;i<count;i++){
+  try{ready.push([i,await readImage(files[i])])}
+  catch(e){show('La photo '+(i+1)+' est incompatible : '+e.message,true)}
+ }
+ if(!ready.length){show('Aucune photo compatible sélectionnée.',true);return}
+ checkpoint();
+ for(const [i,data] of ready)posts[i]={...posts[i],src:data,sources:[data]};
+ selected=-1;
+ render();
+ show(ready.length+' photo(s) ajoutée(s) dans l’ordre de la grille. Enregistre le projet pour les garder.');
+};
+
+renderStoryEditors();demo();show('Exemples restaurés.')}};
 function extractUsername(raw){let s=raw.trim();if(!s)throw Error('Colle l’URL d’un profil Instagram.');if(s.startsWith('@'))s='https://www.instagram.com/'+s.slice(1)+'/';if(/^(?:www\.)?instagram\.com\//i.test(s))s='https://'+s;let url;try{url=new URL(s)}catch{throw Error('URL Instagram invalide.')}if(url.protocol!=='https:'||!['instagram.com','www.instagram.com'].includes(url.hostname.toLowerCase()))throw Error('Utilise un lien instagram.com valide.');const parts=url.pathname.split('/').filter(Boolean);if(parts.length!==1||!parts[0].match(/^[A-Za-z0-9._]{1,30}$/)||['p','reels','reel','stories','explore','direct','accounts'].includes(parts[0].toLowerCase()))throw Error('Colle le lien d’un profil, pas d’une publication.');return parts[0]}
 function normalizePost(p){
  if(!p||typeof p!=='object')return null;
