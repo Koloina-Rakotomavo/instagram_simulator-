@@ -12,3 +12,5 @@ jobs:
           node-version: '22'
       - name: Tester le Worker
         run: node --test test_worker.mjs
+      - name: Vérifier le simulateur mobile
+        run: node --test test_frontend.mjs
