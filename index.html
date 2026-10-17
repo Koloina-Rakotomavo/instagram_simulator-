@@ -201,9 +201,181 @@ input:focus,textarea:focus,select:focus{
   button,.file-label{transition:none}
 }
 
+
+/* Instagram vivid edition · 2026-10-17 */
+/* Past CSS preserved so touch controls, imports and layouts remain functional. */
+body {
+  background:
+    radial-gradient(ellipse 550px 380px at 0% 3%,rgba(254,218,119,.20),transparent 65%),
+    radial-gradient(ellipse 600px 410px at 100% 0%,rgba(221,42,123,.13),transparent 65%),
+    #fafafa;
+}
+.sitebar {
+  position:relative;
+  isolation:isolate;
+  align-items:center;
+  min-height:84px;
+  padding-top:17px;
+  padding-bottom:17px;
+  background:linear-gradient(104deg,#fff8ef 0%,#fff 37%,#fff7fb 78%,#f8f4ff 100%);
+  border-bottom:1px solid #f1d6e6;
+}
+.sitebar::before {
+  top:0;
+  height:5px;
+  background:var(--ig-gradient);
+}
+.brand-lockup {
+  display:flex;
+  align-items:center;
+  min-width:0;
+  gap:12px;
+}
+.ig-app-icon {
+  width:45px;
+  height:45px;
+  border-radius:13px;
+  display:inline-grid;
+  flex:none;
+  place-items:center;
+  color:white;
+  background:var(--ig-gradient);
+  box-shadow:0 5px 16px rgba(221,42,123,.24), inset 0 1px 1px #ffffff50;
+}
+.ig-app-icon svg {width:28px;height:28px;display:block;}
+.sitebar .logo {
+  display:inline-block;
+  line-height:1.1;
+  font-size:clamp(23px,2.5vw,30px);
+  font-weight:850;
+  letter-spacing:-1.4px;
+  background:var(--ig-gradient);
+  background-clip:text;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  color:#c13584;
+}
+.sitebar .logo-dot {
+  color:#dd2a7b;
+  -webkit-text-fill-color:#dd2a7b;
+}
+.sitebar .pill {
+  min-height:34px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding:8px 12px;
+  font-size:11px;
+  font-weight:750;
+  color:#fff;
+  background:var(--ig-gradient);
+  border:0;
+  box-shadow:0 5px 14px rgba(221,42,123,.17);
+}
+.pill-spark {width:7px;height:7px;display:inline-block;flex:none;border-radius:50%;background:#fff;}
+.panel,.preview,.import-panel,.edit-panel{border-color:#e9e2e7;}
+.import-panel {
+  border-color:#f5d3e5;
+  background:linear-gradient(152deg,#fff 20%,#fff7fc 77%,#fff7ef 100%);
+}
+.panel h1,.import-panel h1 {
+  font-weight:850;
+  letter-spacing:-.8px;
+  color:#b52a80;
+}
+.url-box {
+  background:linear-gradient(130deg,#fff9f2 0%,#fff6fb 58%,#f9f4ff 100%);
+  border:1px solid #f0cee0;
+  box-shadow:inset 0 1px 0 #fff;
+}
+.url-box .eyebrow {color:#aa2381;font-weight:850;}
+.import-row button.primary,
+.file-label.primary,
+.mobile-only .file-label.primary,
+.action-grid #export {
+  background:var(--ig-gradient);
+  border-color:transparent;
+  color:#fff;
+  box-shadow:0 5px 14px rgba(221,42,123,.16);
+}
+.import-row button.primary:hover:not(:disabled),
+.file-label.primary:hover,
+.action-grid #export:hover:not(:disabled){
+  background:var(--ig-gradient);
+  filter:saturate(1.12) brightness(1.03);
+}
+.preview{
+  background:#fff;
+  border:1px solid #e9e5e8;
+}
+.grid-heading{
+  position:relative;
+  border-top:1px solid #eaeaea;
+}
+.grid-heading::before{
+  content:"";
+  position:absolute;
+  top:-2px;
+  left:0;
+  height:3px;
+  width:122px;
+  max-width:44%;
+  border-radius:999px;
+  background:var(--ig-gradient);
+}
+.avatar{background:var(--ig-gradient);}
+.circle {
+  background:conic-gradient(from 35deg,#feda77,#f58529,#dd2a7b,#8134af,#515bd4,#feda77);
+  outline:none;
+}
+.tile.selected .image-wrap{outline-color:#c13584;}
+.tile.selected .image-wrap::after{background:#c13584;}
+.tile-controls button:hover:not(:disabled){color:#c13584;background:#fff3f9;}
+@media (max-width:700px){
+  .sitebar{
+    padding:calc(12px + env(safe-area-inset-top)) 14px 12px;
+    min-height:75px;
+    gap:8px;
+    background:linear-gradient(108deg,#fff5e8 0%,#fff 43%,#fff3f9 82%,#f9f3ff 100%);
+  }
+  .brand-lockup{gap:9px;}
+  .ig-app-icon{width:38px;height:38px;border-radius:11px;}
+  .ig-app-icon svg{width:24px;height:24px;}
+  .sitebar .logo{font-size:clamp(20px,5.3vw,26px);letter-spacing:-1px;}
+  .sitebar .pill{font-size:10px;padding:7px 9px;min-height:30px;gap:5px;letter-spacing:0;white-space:nowrap;}
+  .pill-spark{width:6px;height:6px;}
+  .import-panel{
+    border:1px solid #f2d7e6;
+    background:linear-gradient(150deg,#fff 8%,#fff8fd 72%,#fff9f2 100%);
+    box-shadow:0 6px 22px rgba(221,42,123,.07);
+  }
+  .import-panel h1{color:#b52a80;}
+  .import-panel .url-box{
+    background:linear-gradient(135deg,#fff8f0,#fff4fa 56%,#f8f3ff);
+    border-color:#f1c8de;
+  }
+  .preview{box-shadow:0 6px 23px rgba(38,38,38,.04);}
+  .edit-panel{border-color:#ebdfeb;}
+}
+@media (max-width:375px){
+  .sitebar{padding-left:10px;padding-right:10px;}
+  .brand-lockup{gap:7px;}
+  .ig-app-icon{width:33px;height:33px;border-radius:10px;}
+  .ig-app-icon svg{width:22px;height:22px;}
+  .sitebar .logo{font-size:20px;}
+  .sitebar .pill{font-size:9px;padding:6px 7px;}
+}
+
 </style>
 </head><body>
-<header class="sitebar"><div><div class="logo">studio feed<em>.</em></div><div class="subtitle">Compose ta grille Instagram avant de publier.</div></div><span class="pill">Édition mobile</span></header>
+<header class="sitebar">
+ <div class="brand-lockup">
+  <span class="ig-app-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.7" r="1" fill="currentColor" stroke="none"/></svg></span>
+  <span class="logo">studio feed<span class="logo-dot">.</span></span>
+ </div>
+ <span class="pill"><span class="pill-spark" aria-hidden="true"></span>Édition mobile</span>
+</header>
 <main class="shell">
 <aside class="panel">
  <div class="import-panel">
