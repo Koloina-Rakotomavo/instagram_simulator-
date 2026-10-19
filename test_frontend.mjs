@@ -23,3 +23,17 @@ test('les fonctions mobiles et les imports sont présents',()=>{
 test('aucun jeton Apify n’est codé en dur dans le HTML',()=>{
  assert.ok(!html.includes('apify_api_'),'Ne jamais embarquer un jeton API dans GitHub Pages');
 });
+
+test('le proxy image ne traite que les CDN Instagram et conserve les paramètres de signature',()=>{
+ const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1]||'';
+ const fn=script.match(/function publicImageProxy\(url\)\{[\s\S]*?\n\}/)?.[0];
+ assert.ok(fn,'Fonction proxy introuvable');
+ const context={URL,encodeURIComponent};
+ const proxy=vm.runInNewContext(fn+'\npublicImageProxy',context);
+ const original='https://scontent-fra3-2.cdninstagram.com/v/t51/a.jpg?oh=a123&oe=42';
+ const value=proxy(original);
+ assert.ok(value.startsWith('https://wsrv.nl/?url='),'Le proxy doit être activé');
+ assert.ok(value.includes(encodeURIComponent(original)),'Le lien signé doit être encodé en entier');
+ assert.equal(proxy('https://example.org/image.jpg'),'','Ne pas transférer des domaines arbitraires');
+ assert.equal(proxy('http://scontent-fra3-2.cdninstagram.com/a.jpg'),'','Exiger HTTPS');
+});
