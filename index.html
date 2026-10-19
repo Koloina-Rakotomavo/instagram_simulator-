@@ -429,7 +429,7 @@ $('importUrl').onclick=async()=>{if(importBusy)return;let username;try{username=
 function publicImageProxy(url){
  try{
   const u=new URL(url);
-  if(u.protocol!=='https:'||!/^(?:[a-z0-9-]+\\.)*(?:cdninstagram\\.com|fbcdn\\.net)$/i.test(u.hostname))return '';
+  if(u.protocol!=='https:'||!/^(?:[a-z0-9-]+\.)*(?:cdninstagram\.com|fbcdn\.net)$/i.test(u.hostname))return '';
   return 'https://wsrv.nl/?url='+encodeURIComponent(url)+'&w=720&q=78&output=jpg';
  }catch{return ''}
 }
