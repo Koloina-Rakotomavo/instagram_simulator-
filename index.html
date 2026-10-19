@@ -264,6 +264,10 @@ input:focus,textarea:focus,select:focus{border-color:#a8a8a8}
  <div class="edit-panel">
   <div class="mobile-only" style="display:none"><div class="section-head" style="margin:0 0 8px">Modifier ma composition</div><label class="file-label primary">＋ Ajouter mes visuels<input id="imagesMobile" type="file" accept="image/*" multiple></label><p class="hint" style="margin:8px 0">Sélectionne une publication, puis touche sa nouvelle place, ou utilise les flèches sous chaque image.</p></div>
   <div class="action-grid"><button id="undo" disabled>↶ Annuler</button><button id="export">Enregistrer le projet</button><button id="shareProject">Partager / Fichiers</button><label class="file-label">Ouvrir un projet<input id="project" type="file" accept=".json,application/json"></label><button id="reset">Réinitialiser</button><label class="file-label">Importer JSON Instagram<input id="instagramJson" type="file" accept=".json,application/json"></label></div>
+  <label class="hint" style="display:flex;gap:8px;align-items:flex-start;margin:12px 0 4px;cursor:pointer">
+    <input id="autoFetchImages" type="checkbox" checked style="margin-top:4px;accent-color:#0095f6;flex:none">
+    <span><strong>Récupérer les miniatures automatiquement</strong><span style="display:block;margin-top:3px">Gratuit et sans configuration : utilise un service tiers d’images publiques (wsrv.nl). Son accès à Instagram peut toutefois échouer.</span></span>
+  </label>
   <label class="file-label" style="margin-top:10px;width:100%">Compléter les photos du JSON<input id="repairImages" type="file" accept="image/*" multiple></label>
   <p class="hint" style="margin:6px 0 0">Après l’import JSON, sélectionne tes photos dans l’ordre de la grille. Le profil et les publications restent inchangés.</p>
   <details class="fold"><summary>Personnaliser le profil</summary><div class="fold-content">
@@ -417,6 +421,94 @@ try{$('apiEndpoint').value=localStorage.getItem('studioFeedWorker')||'';$('apiPa
 async function makeLocalImage(mediaUrl,endpoint,passcode){const url=endpoint+'/api/media?url='+encodeURIComponent(mediaUrl);const resp=await fetch(url,{headers:passcode?{'X-Studio-Code':passcode}:{}});if(!resp.ok)throw Error('Image inaccessible');const blob=await resp.blob();if(!blob.type.startsWith('image/')||blob.size>8000000)throw Error('Image incompatible');return readImage(new File([blob],'visuel.jpg',{type:blob.type}))}
 async function settleImages(items,endpoint,passcode){let next=0,done=0;const results=new Array(items.length);const runner=async()=>{while(next<items.length){const i=next++;const p=items[i];try{results[i]={...p,src:await makeLocalImage(p.src,endpoint,passcode)}}catch{results[i]=p}done++;show('Téléchargement des miniatures : '+done+'/'+items.length+'…',false,true)}};await Promise.all(Array.from({length:Math.min(3,items.length)},()=>runner()));return results}
 $('importUrl').onclick=async()=>{if(importBusy)return;let username;try{username=extractUsername($('profileUrl').value)}catch(err){show(err.message,true);return}const endpoint=getEndpoint();if(!validateEndpoint(endpoint)){$('backendDetails').open=true;show('Le service d’import n’est pas encore relié. Renseigne son URL dans « Connexion Instagram ». Tu peux déjà importer des photos ou un export JSON.',true);return}const passcode=$('apiPasscode').value;importBusy=true;$('importUrl').disabled=true;show('Recherche du compte @'+username+'…',false,true);try{const resp=await fetch(endpoint+'/api/import',{method:'POST',headers:{'Content-Type':'application/json',...(passcode?{'X-Studio-Code':passcode}:{})},body:JSON.stringify({username,limit:Number($('importLimit').value)})});let data;try{data=await resp.json()}catch{throw Error('Le service a répondu dans un format inattendu.')}if(!resp.ok)throw Error(data.error||'Import indisponible ('+resp.status+').');const normalized=normalizeExternalData(data);if(normalized.private)throw Error('Ce compte est privé : import impossible.');if(!normalized.posts.length)throw Error('Aucune publication publique récupérée pour ce profil.');show(normalized.posts.length+' miniatures récupérées. Préparation du projet…',false,true);const local=await settleImages(normalized.posts,endpoint,passcode);checkpoint();posts=local;examples=false;currentSource=username;selected=-1;$('username').value=username;$('displayName').value=normalized.fullName;$('bio').value=normalized.bio;if(Number.isFinite(normalized.followers))$('followers').value=normalized.followers;if(Number.isFinite(normalized.following))$('following').value=normalized.following;avatar=normalized.avatarUrl||'';if(avatar){try{avatar=await makeLocalImage(avatar,endpoint,passcode)}catch{}}render();const loose=local.filter(p=>p.src.startsWith('https://')).length;show(local.length+' publications importées depuis @'+username+'.'+(loose?' '+loose+' image(s) encore liées à Instagram et susceptibles d’expirer.':''));}catch(err){show(err.message||'Impossible d’importer ce profil.',true)}finally{importBusy=false;$('importUrl').disabled=false}};
-$('instagramJson').onchange=async e=>{try{const file=e.target.files[0];if(!file)return;if(file.size>10000000)throw Error('JSON trop volumineux.');const data=normalizeExternalData(JSON.parse(await file.text()));if(data.private)throw Error('Ce profil est privé.');if(!data.posts.length)throw Error('Le JSON doit contenir des publications avec leurs URL d’images.');checkpoint();posts=data.posts;examples=false;currentSource=data.username||'';selected=-1;if(data.username)$('username').value=data.username;if(data.fullName)$('displayName').value=data.fullName;if(data.bio)$('bio').value=data.bio;if(Number.isFinite(data.followers))$('followers').value=data.followers;if(Number.isFinite(data.following))$('following').value=data.following;if(data.avatarUrl)avatar=data.avatarUrl;render();show(data.posts.length+' publications importées. Si les photos restent grises, les liens Instagram ont expiré ou sont bloqués : envoie-moi le JSON Apify pour vérifier les champs, ou importe les photos en local.')}catch(err){show(err.message,true)}e.target.value=''};
+/* Images Instagram : les liens signés renvoyés par Apify ne se chargent pas
+ * toujours depuis GitHub Pages. Ce service tiers gratuit fait la requête
+ * réseau depuis son serveur ; il n'est utilisé que si la case est cochée.
+ * Les images ne sont jamais publiées dans le dépôt GitHub.
+ */
+function publicImageProxy(url){
+ try{
+  const u=new URL(url);
+  if(u.protocol!=='https:'||!/^(?:[a-z0-9-]+\\.)*(?:cdninstagram\\.com|fbcdn\\.net)$/i.test(u.hostname))return '';
+  return 'https://wsrv.nl/?url='+encodeURIComponent(url)+'&w=720&q=78&output=jpg';
+ }catch{return ''}
+}
+async function captureImageFromProxy(url){
+ const target=publicImageProxy(url);
+ if(!target)throw Error('Adresse non prise en charge');
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),10000);
+ try{
+  const resp=await fetch(target,{method:'GET',mode:'cors',credentials:'omit',signal:controller.signal});
+  if(!resp.ok)throw Error('Image refusée ('+resp.status+')');
+  const stated=Number(resp.headers.get('content-length')||0);
+  if(stated>6500000)throw Error('Image trop volumineuse');
+  const blob=await resp.blob();
+  if(!blob.type.startsWith('image/')||blob.size>6500000||blob.size===0)throw Error('Réponse non image');
+  return await readImage(new File([blob],'instagram.jpg',{type:blob.type}));
+ }finally{clearTimeout(timeout)}
+}
+async function resolveInstagramMedia(importedPosts,avatarURL){
+ let index=0,finished=0,saved=0;
+ const workers=Array.from({length:Math.min(4,importedPosts.length)},async()=>{
+  while(index<importedPosts.length){
+   const i=index++,post=importedPosts[i],source=post.sources?.[0]||post.src;
+   const proxy=publicImageProxy(source);
+   if(proxy){
+    post.src=proxy;
+    post.sources=[proxy,...(post.sources||[source]).filter(x=>x!==proxy)];
+    try{
+     const image=await captureImageFromProxy(source);
+     post.src=image;post.sources=[image];saved++;
+    }catch{/* Le navigateur peut encore afficher le lien via le proxy. */}
+   }
+   finished++;
+   show('Récupération des miniatures : '+finished+'/'+importedPosts.length+'…',false,true);
+  }
+ });
+ await Promise.all(workers);
+ let resolvedAvatar=avatarURL;
+ if(avatarURL){
+  const proxy=publicImageProxy(avatarURL);
+  if(proxy){
+   resolvedAvatar=proxy;
+   try{resolvedAvatar=await captureImageFromProxy(avatarURL)}
+   catch{/* Photo de profil affichée via le proxy lorsque possible. */}
+  }
+ }
+ return{saved,avatar:resolvedAvatar};
+}
+$('instagramJson').onchange=async e=>{
+ const input=e.target,file=input.files?.[0];
+ if(!file)return;
+ input.disabled=true;
+ try{
+  if(file.size>10000000)throw Error('JSON trop volumineux.');
+  const data=normalizeExternalData(JSON.parse(await file.text()));
+  if(data.private)throw Error('Ce profil est privé.');
+  if(!data.posts.length)throw Error('Le JSON ne contient pas de liens d’images utilisables.');
+  const imported=data.posts.map(p=>({...p,sources:Array.isArray(p.sources)?p.sources.slice():[p.src]}));
+  const auto=$('autoFetchImages').checked;
+  let stored=0,importedAvatar=data.avatarUrl||'';
+  if(auto){
+   show('Import du profil @'+(data.username||'Instagram')+' : récupération automatique des photos…',false,true);
+   const resolution=await resolveInstagramMedia(imported,importedAvatar);
+   stored=resolution.saved;importedAvatar=resolution.avatar;
+  }
+  checkpoint();
+  posts=imported;examples=false;currentSource=data.username||'';selected=-1;
+  if(data.username)$('username').value=data.username;
+  if(data.fullName)$('displayName').value=data.fullName;
+  if(data.bio)$('bio').value=data.bio;
+  if(Number.isFinite(data.followers))$('followers').value=data.followers;
+  if(Number.isFinite(data.following))$('following').value=data.following;
+  if(importedAvatar)avatar=importedAvatar;
+  render();
+  if(!auto)show(posts.length+' publications importées. Récupération automatique désactivée : les liens peuvent être bloqués.');
+  else if(stored===posts.length)show('Import terminé : '+stored+' photos intégrées au projet. Enregistre-le pour les garder.');
+  else show('Import terminé : '+stored+'/'+posts.length+' photos intégrées au projet. Les autres sont tentées en affichage mais peuvent rester indisponibles si Instagram les bloque.',stored===0);
+ }catch(err){show(err.message||'Import JSON impossible.',true)}
+ finally{input.disabled=false;input.value=''}
+};
 renderStoryEditors();demo();
 </script></body></html>
