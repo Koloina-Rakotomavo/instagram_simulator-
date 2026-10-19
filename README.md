@@ -13,6 +13,15 @@ L’application permet de composer et réorganiser sur iPhone une grille de publ
 - Importer un JSON de publications existant.
 - Prévisualiser la grille des profils Instagram **publics** depuis leur URL, **à condition d'activer le service Apify/Cloudflare**.
 
+## Import JSON avec récupération automatique des photos
+
+1. Télécharge le JSON d'un compte Instagram **public** depuis Apify une seule fois.
+2. Dans le simulateur, clique sur **Importer JSON Instagram**.
+3. L'option **Récupérer les miniatures automatiquement** est cochée par défaut. Le site essaie d'importer les fichiers image via un service tiers gratuit ([wsrv.nl](https://wsrv.nl/)), sans clé ni compte Cloudflare. Tu peux décocher l'option si tu ne veux pas lui transmettre les URL d'images publiques.
+4. Quand les photos ont pu être téléchargées, elles sont converties en données locales et incluses dans **Enregistrer le projet**. Tu peux réorganiser ta grille sur iPhone puis la rouvrir plus tard.
+
+**Limites importantes :** le service d'images gratuit peut refuser les CDN Instagram, qui peuvent eux-mêmes rejeter l'accès ou révoquer un lien avant sa date d'expiration. L'option ne peut donc pas garantir 100 % des images. Les photos qu'il n'a pas pu télécharger peuvent parfois rester visibles via le proxy, mais elles ne sont pas enregistrées localement. Les images ne sont pas transférées vers GitHub. L'import automatique depuis une simple URL de profil reste une fonctionnalité différente, qui nécessite le Worker Cloudflare et un accès Apify.
+
 ## Activer l'import par URL Instagram
 
 Le site est déjà publié sur GitHub Pages. Le service d'import n'est pas inclus dans cet hébergement statique.
